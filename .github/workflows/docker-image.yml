@@ -13,13 +13,16 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
     - name: Build the Docker image
       env:
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        IMAGE_TAG: ${{ github.sha }}
+        DOCKER_TAG: $DOCKERHUB_USERNAME/$DOCKERHUB_REPOSITORY:$IMAGE_TAG
       run: |
-        IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-8)
-        DOCKER_TAG=${DOCKERHUB_USERNAME}/${DOCKERHUB_REPOSITORY}:commit-${IMAGE_TAG//-/}
-        docker build . --file Dockerfile --tag $DOCKER_TAG
-        docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD
+        echo $DOCKERHUB_PASSWORD | docker login --username $DOCKERHUB_USERNAME --password-stdin
+        docker buildx build --file Dockerfile --tag $DOCKER_TAG .
         docker push $DOCKER_TAG
